@@ -2,7 +2,6 @@ import streamlit as st
 import google.generativeai as genai
 import PIL.Image
 import urllib.parse
-from audio_recorder_streamlit import audio_recorder
 
 # --- 1. Secure API Setup ---
 try:
@@ -31,30 +30,29 @@ def toggle_theme():
 # --- 4. Exact Color Palette ---
 if st.session_state.theme == 'light':
     bg_color = "#F4F4F5"       # Light Grey
-    text_color = "#18181B"     # Deep Dark for text
+    text_color = "#18181B"     # Deep Dark
     text_muted = "#71717A"
     card_bg = "#FFFFFF"
     border_color = "#E4E4E7"
-    snow_color = "rgba(0, 0, 0, 0.05)" # Light grey snow
+    snow_color = "rgba(0, 0, 0, 0.05)"
+    footer_bg = "#FFFFFF"
 else:
-    bg_color = "#0F0F11"       # Obsidian (Deep Black)
+    bg_color = "#0F0F11"       # Obsidian
     text_color = "#F4F4F5"     # Light text
     text_muted = "#A1A1AA"
-    card_bg = "#18181B"        # Slightly lighter obsidian for cards
+    card_bg = "#18181B"        # Slightly lighter obsidian
     border_color = "#27272A"
-    snow_color = "rgba(255, 255, 255, 0.2)" # White snow
+    snow_color = "rgba(255, 255, 255, 0.2)"
+    footer_bg = "#18181B"
 
-# Fixed Action Colors
-btn_terracotta = "#E2725B"     # Premium Terracotta
-btn_terracotta_hover = "#C95C47"
-btn_whatsapp = "#25D366"
+btn_green = "#22C55E"          # Generate Button (Green)
+btn_whatsapp = "#25D366"       # WhatsApp Button
 
 st.markdown(f"""
 <style>
     /* Fonts & Icons */
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
     @import url("https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css");
-    @import url("https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css");
 
     /* Global Typography */
     html, body, [class*="st-"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, label, button, span, div {{
@@ -77,11 +75,12 @@ st.markdown(f"""
     /* Main container */
     [data-testid="block-container"] {{
         padding-top: 2rem !important;
+        padding-bottom: 120px !important; /* Space for footer */
         max-width: 700px !important;
         z-index: 10;
     }}
 
-    /* ----- FIXED FILE UPLOADER ----- */
+    /* ----- FIXED FILE UPLOADER (NO OVERLAP) ----- */
     [data-testid="stFileUploader"] {{
         width: 100% !important;
         background-color: {card_bg} !important;
@@ -101,10 +100,33 @@ st.markdown(f"""
         border: none !important;
         font-weight: 600 !important;
         padding: 8px 16px !important;
+        white-space: nowrap !important; /* Fix text break */
+        min-width: 120px !important;
     }}
-    /* Upload Text */
-    [data-testid="stFileUploader"] label {{
-        color: {text_muted} !important;
+    
+    /* ----- NATIVE AUDIO INPUT (MIC BUTTON) ----- */
+    [data-testid="stAudioInput"] {{
+        background-color: {card_bg} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 16px !important;
+        padding: 10px !important;
+    }}
+    /* Style the record button inside */
+    [data-testid="stAudioInput"] button {{
+        background-color: {text_color} !important;
+        color: {bg_color} !important;
+        border-radius: 50% !important; /* Circle */
+        width: 60px !important;
+        height: 60px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 auto !important;
+    }}
+    [data-testid="stAudioInput"] button svg {{
+        fill: {bg_color} !important;
+        width: 30px !important;
+        height: 30px !important;
     }}
 
     /* ----- TEXT AREA ----- */
@@ -120,17 +142,9 @@ st.markdown(f"""
         color: {text_muted} !important;
     }}
 
-    /* ----- MIC CONTAINER ----- */
-    [data-testid="stVerticalBlockBorderWrapper"] {{
-        background-color: {card_bg} !important;
-        border: 1px solid {border_color} !important;
-        border-radius: 16px !important;
-        padding: 15px !important;
-    }}
-
-    /* ----- TERRACOTTA GENERATE BUTTON ----- */
+    /* ----- GREEN GENERATE BUTTON ----- */
     [data-testid="baseButton-primary"] {{
-        background-color: {btn_terracotta} !important;
+        background-color: {btn_green} !important;
         color: #FFFFFF !important;
         border-radius: 30px !important;
         border: none !important;
@@ -140,17 +154,14 @@ st.markdown(f"""
         width: auto !important;
         margin: 0 auto !important;
         display: block !important;
-        box-shadow: 0 4px 14px rgba(226, 114, 91, 0.3);
-        transition: transform 0.2s ease, background-color 0.2s ease;
-    }}
-    [data-testid="baseButton-primary"]:hover {{
-        background-color: {btn_terracotta_hover} !important;
+        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+        transition: transform 0.2s ease;
     }}
     [data-testid="baseButton-primary"]:active {{
         transform: scale(0.98);
     }}
 
-    /* ----- OFFICIAL WHATSAPP BUTTON ----- */
+    /* ----- WHATSAPP BUTTON ----- */
     .whatsapp-btn {{
         background-color: {btn_whatsapp}; 
         color: white; 
@@ -171,11 +182,6 @@ st.markdown(f"""
         transition: transform 0.2s ease;
     }}
     .whatsapp-btn:active {{ transform: scale(0.98); }}
-    
-    /* Official WhatsApp SVG alignment */
-    .whatsapp-btn svg {{
-        margin-bottom: 2px;
-    }}
 
     /* ----- SNOW ANIMATION ----- */
     .snow-bg {{
@@ -194,6 +200,23 @@ st.markdown(f"""
         100% {{ transform: translateY(100vh); }} 
     }}
 
+    /* ----- FOOTER (SNOW GROUND + SNOWMEN) ----- */
+    .snow-footer {{
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: 90px;
+        background: {footer_bg};
+        border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding: 0 30px 15px 30px;
+        z-index: 99;
+        box-shadow: 0 -10px 20px rgba(0,0,0,0.05);
+    }}
+    .snow-footer span {{ font-size: 32px; }}
+    .house-center {{ font-size: 45px !important; margin-bottom: -5px; }}
+
     /* ----- ICON COLORS ----- */
     .ph, .ph-fill {{ 
         color: {text_color} !important; 
@@ -203,7 +226,7 @@ st.markdown(f"""
     }}
 
     /* ============================================
-       RESPONSIVE DESIGN (MOBILE OPTIMIZATION)
+       RESPONSIVE DESIGN (MOBILE)
        ============================================ */
     @media (max-width: 768px) {{
         [data-testid="block-container"] {{
@@ -220,9 +243,19 @@ st.markdown(f"""
         }}
         h2 {{ font-size: 1.5rem !important; }}
         h5 {{ font-size: 1.1rem !important; }}
+        .snow-footer {{ padding: 0 10px 10px 10px; height: 70px; }}
+        .snow-footer span {{ font-size: 24px; }}
+        .house-center {{ font-size: 32px !important; }}
     }}
 </style>
 <div class="snow-bg"></div>
+
+<!-- Snow Footer with Snowmen & House -->
+<div class="snow-footer">
+    <span>☃️⛄</span>
+    <span class="house-center">🏠</span>
+    <span>⛄☃️</span>
+</div>
 """, unsafe_allow_html=True)
 
 # --- 5. Header & Toggle ---
@@ -239,8 +272,8 @@ st.write("")
 
 # --- 6. Inputs ---
 st.markdown(f"<h5 style='font-weight: 600;'><i class='ph ph-microphone-stage'></i> Record Live Audio</h5>", unsafe_allow_html=True)
-with st.container(border=True):
-    audio_bytes = audio_recorder(text="Tap to Record", recording_color="#EF4444", neutral_color=text_color, icon_size="2x")
+# Using native st.audio_input
+audio_bytes = st.audio_input("Tap to Record", key="live_audio")
 
 if audio_bytes:
     st.markdown(f"<div style='color: #10B981; margin-bottom: 15px; font-weight: 500;'><i class='ph-fill ph-check-circle' style='color: #10B981 !important;'></i> Awaaz record ho gayi!</div>", unsafe_allow_html=True)
@@ -277,7 +310,7 @@ if generate_clicked:
             contents.append(prompt)
             
             if audio_bytes:
-                contents.append({"mime_type": "audio/wav", "data": audio_bytes})
+                contents.append({"mime_type": "audio/wav", "data": audio_bytes.read()})
             elif audio_file:
                 contents.append({"mime_type": "audio/mp3", "data": audio_file.read()})
                 
