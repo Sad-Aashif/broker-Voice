@@ -7,7 +7,7 @@ import urllib.parse
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel('gemini-3.6-flash')
+    model = genai.GenerativeModel('gemini-3.5-flash-lite')
 except KeyError:
     st.error("API Key missing. Please set GEMINI_API_KEY in Streamlit secrets.")
     st.stop()
