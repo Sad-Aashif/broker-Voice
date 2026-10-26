@@ -10,7 +10,7 @@ try:
     genai.configure(api_key=API_KEY)
     model = genai.GenerativeModel('gemini-1.5-flash')
 except KeyError:
-    st.error("API Key is missing from Streamlit secrets.")
+    st.error("API Key missing.")
     st.stop()
 
 # --- 2. Page Config ---
@@ -23,27 +23,25 @@ if 'theme' not in st.session_state:
 def toggle_theme():
     st.session_state.theme = 'dark' if st.session_state.theme == 'light' else 'light'
 
-# --- 4. CSS Variables & Styling ---
+# --- 4. Premium BrocodesTech Inspired Palette ---
 if st.session_state.theme == 'light':
     bg_color = "#F4F6F8"       # Soothing off-white
-    card_bg = "#FFFFFF"        # Pure white cards
-    text_color = "#1E293B"     # Dark slate for readability
+    card_bg = "#FFFFFF"        # Pure white
+    text_color = "#1E293B"     # Dark slate
     text_muted = "#64748B"
     border_color = "#E2E8F0"
-    accent_color = "#2563EB"   # Premium blue
+    accent_color = "#059669"   # Brocodes Green (darker for light mode)
     input_bg = "#F8FAFC"
-    snow_opacity = "0.15"
-    icon_color = "#1E293B"
+    snow_color = "rgba(100, 116, 139, 0.15)" # Grey snow for light mode
 else:
-    bg_color = "#0F172A"       # Deep Obsidian
-    card_bg = "#1E293B"        # Slightly lighter slate for cards
+    bg_color = "#0F172A"       # Deep Obsidian (Brocode style)
+    card_bg = "#1E293B"        # Slate card
     text_color = "#F1F5F9"     # Light text
     text_muted = "#94A3B8"
     border_color = "#334155"
-    accent_color = "#38BDF8"   # Bright sky blue
+    accent_color = "#BAE67E"   # Brocodes Neon Green
     input_bg = "#0B1120"
-    snow_opacity = "0.3"
-    icon_color = "#F1F5F9"
+    snow_color = "rgba(255, 255, 255, 0.25)" # White snow for dark mode
 
 st.markdown(f"""
 <style>
@@ -66,7 +64,6 @@ st.markdown(f"""
         color: {text_color} !important;
     }}
     
-    /* Hide Streamlit Defaults */
     #MainMenu, header, footer {{visibility: hidden;}}
 
     /* Main Container */
@@ -76,38 +73,52 @@ st.markdown(f"""
         z-index: 10;
     }}
 
-    /* File Uploaders & Text Area */
-    [data-testid="stFileUploader"] > div > div,
-    [data-testid="stTextArea"] > div > div > textarea {{
+    /* Fix File Uploader Overlap */
+    [data-testid="stFileUploader"] {{
+        background-color: {card_bg} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 16px !important;
+        padding: 10px !important;
+    }}
+    [data-testid="stFileUploader"] > div > div {{
+        background-color: transparent !important;
+        border: none !important;
+    }}
+    [data-testid="stFileUploader"] button {{
+        border-radius: 8px !important;
+        background-color: {accent_color} !important;
+        color: #fff !important;
+        border: none !important;
+        margin: 0 !important;
+    }}
+    [data-testid="stFileUploader"] label {{
+        color: {text_muted} !important;
+    }}
+
+    /* Text Area Fix */
+    .stTextArea textarea {{
         background-color: {card_bg} !important;
         border: 1px solid {border_color} !important;
         border-radius: 16px !important;
         color: {text_color} !important;
         padding: 12px;
-        transition: border 0.3s ease;
     }}
-    [data-testid="stFileUploader"]:hover > div > div,
-    [data-testid="stTextArea"] > div > div > textarea:focus {{
-        border-color: {accent_color} !important;
-    }}
-    
-    /* Fix Text Area Placeholder */
     .stTextArea textarea::placeholder {{
         color: {text_muted} !important;
     }}
 
-    /* Native Container Border (For Mic) */
+    /* Mic Container */
     [data-testid="stVerticalBlockBorderWrapper"] {{
         background-color: {card_bg} !important;
         border: 1px solid {border_color} !important;
         border-radius: 16px !important;
-        padding: 10px;
+        padding: 15px !important;
     }}
 
-    /* Generate Button (Pill Shape, Centered) */
+    /* Generate Button */
     [data-testid="baseButton-primary"] {{
-        background: linear-gradient(135deg, {accent_color}, {accent_color}) !important;
-        color: #FFFFFF !important;
+        background: {accent_color} !important;
+        color: #000 !important; /* Dark text for neon green */
         border-radius: 30px !important;
         border: none !important;
         font-weight: 600 !important;
@@ -116,8 +127,8 @@ st.markdown(f"""
         width: auto !important;
         margin: 0 auto !important;
         display: block !important;
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
     }}
     [data-testid="baseButton-primary"]:active {{
         transform: scale(0.98);
@@ -135,15 +146,15 @@ st.markdown(f"""
     }}
     .whatsapp-btn:active {{ transform: scale(0.98); }}
 
-    /* Custom Subtle Snow Animation */
+    /* Snow Animation (Fixed for light mode) */
     .snow-bg {{
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         pointer-events: none; z-index: 0;
         background-image: 
-        radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,{snow_opacity}), transparent),
-        radial-gradient(3px 3px at 150px 90px, rgba(255,255,255,{snow_opacity}), transparent),
-        radial-gradient(2px 2px at 280px 150px, rgba(255,255,255,{snow_opacity}), transparent),
-        radial-gradient(4px 4px at 400px 50px, rgba(255,255,255,{snow_opacity}), transparent);
+        radial-gradient(2px 2px at 20px 30px, {snow_color}, transparent),
+        radial-gradient(3px 3px at 150px 90px, {snow_color}, transparent),
+        radial-gradient(2px 2px at 280px 150px, {snow_color}, transparent),
+        radial-gradient(4px 4px at 400px 50px, {snow_color}, transparent);
         background-size: 400px 400px;
         animation: snow-anim 20s linear infinite;
     }}
@@ -152,31 +163,30 @@ st.markdown(f"""
         100% {{ transform: translateY(100vh); }} 
     }}
 
-    /* Icon spacing helper */
-    .ph {{ color: {accent_color} !important; margin-right: 6px; vertical-align: middle; }}
-    .ph-fill {{ color: {accent_color} !important; margin-right: 6px; vertical-align: middle; }}
+    /* Icons Color */
+    .ph, .ph-fill {{ 
+        color: {accent_color} !important; 
+        margin-right: 6px; 
+        vertical-align: middle; 
+    }}
 </style>
 <div class="snow-bg"></div>
 """, unsafe_allow_html=True)
 
-# --- 5. Top Bar (Theme Toggle) ---
-col1, col2 = st.columns([8, 2])
+# --- 5. Header & Toggle ---
+col1, col2 = st.columns([7, 3])
 with col2:
-    # Toggle with no emoji, just native text and state
     is_dark = st.toggle("Dark Mode", value=st.session_state.theme == 'dark')
     if is_dark != (st.session_state.theme == 'dark'):
         st.session_state.theme = 'dark' if is_dark else 'light'
         st.rerun()
 
-# --- 6. Header ---
 st.markdown(f"<h2 style='text-align: center; font-weight: 700;'><i class='ph ph-house-line'></i> BrokerVoice PRO</h2>", unsafe_allow_html=True)
 st.markdown(f"<p style='text-align: center; font-size: 14px; color: {text_muted} !important;'><i class='ph ph-magic-wand'></i> Apni awaaz ya photo ko professional listing mein badlein.</p>", unsafe_allow_html=True)
 st.write("")
 
-# --- 7. Inputs Section ---
+# --- 6. Inputs ---
 st.markdown(f"<h5 style='font-weight: 600;'><i class='ph ph-microphone-stage'></i> Record Live Audio</h5>", unsafe_allow_html=True)
-
-# Using native container border for the mic component
 with st.container(border=True):
     audio_bytes = audio_recorder(text="Tap to Record", recording_color="#EF4444", neutral_color=accent_color, icon_size="2x")
 
@@ -194,19 +204,17 @@ image_file = st.file_uploader("Photo", type=["jpg", "jpeg", "png"], label_visibi
 st.markdown(f"<p style='font-size:14px; margin-bottom:5px; margin-top:15px; font-weight:500;'><i class='ph ph-pencil-simple'></i> Koi aur details (optional)</p>", unsafe_allow_html=True)
 text_input = st.text_area("Details", height=80, placeholder="Example: Highway se 2km door...", label_visibility="collapsed")
 
-# --- 8. Processing Engine ---
+# --- 7. Process ---
 st.markdown("<br>", unsafe_allow_html=True)
-
-# Center the button using columns
 btn_col1, btn_col2, btn_col3 = st.columns([1, 2, 1])
 with btn_col2:
     generate_clicked = st.button("✨ Generate Listing", type="primary", use_container_width=True)
 
 if generate_clicked:
     if not audio_bytes and not audio_file and not image_file and not text_input:
-        st.markdown(f"<div style='color: #EF4444; margin-bottom: 15px; font-weight: 500;'><i class='ph-fill ph-warning-circle' style='color: #EF4444 !important;'></i> Kripya live record karein ya koi file daalein.</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='color: #EF4444; font-weight: 500;'><i class='ph-fill ph-warning-circle' style='color: #EF4444 !important;'></i> Kripya koi input daalein.</div>", unsafe_allow_html=True)
     else:
-        with st.spinner("AI aapki listing taiyar kar raha hai..."):
+        with st.spinner("AI listing taiyar kar raha hai..."):
             contents = []
             prompt = """
             You are an expert Indian Real Estate Copywriter for 360 Views Services. 
@@ -231,14 +239,13 @@ if generate_clicked:
                 response = model.generate_content(contents)
                 st.session_state['draft'] = response.text
             except Exception as e:
-                st.markdown(f"<div style='color: #EF4444; margin-bottom: 15px; font-weight: 500;'><i class='ph-fill ph-x-circle' style='color: #EF4444 !important;'></i> Error: {e}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color: #EF4444;'><i class='ph-fill ph-x-circle' style='color: #EF4444 !important;'></i> Error: {e}</div>", unsafe_allow_html=True)
 
-# --- 9. WhatsApp Output ---
+# --- 8. Output ---
 if 'draft' in st.session_state:
     st.divider()
     st.markdown(f"<h4 style='font-weight: 600; text-align:center;'><i class='ph ph-clipboard-text'></i> Aapki Listing</h4>", unsafe_allow_html=True)
     
-    # Premium Output Box
     st.markdown(f"""
     <div style='background: {card_bg}; border: 1px solid {border_color}; padding: 20px; border-radius: 16px; margin-bottom: 25px; white-space: pre-wrap; font-family: monospace; color: {text_color};'>
     {st.session_state['draft']}
