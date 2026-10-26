@@ -4,7 +4,7 @@ import PIL.Image
 import urllib.parse
 from audio_recorder_streamlit import audio_recorder
 
-# --- 1. API Setup ---
+# --- 1. Secure API Setup ---
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
@@ -13,12 +13,12 @@ except KeyError:
     st.error("API Key missing. Please set GEMINI_API_KEY in Streamlit secrets.")
     st.stop()
 
-# --- 2. Page Config (Responsive by default) ---
+# --- 2. Page Config (Responsive) ---
 st.set_page_config(
     page_title="BrokerVoice PRO",
     layout="centered",
     initial_sidebar_state="collapsed",
-    menu_items={}  # hide default menu
+    menu_items={}
 )
 
 # --- 3. Theme State ---
@@ -28,28 +28,31 @@ if 'theme' not in st.session_state:
 def toggle_theme():
     st.session_state.theme = 'dark' if st.session_state.theme == 'light' else 'light'
 
-# --- 4. Skyline Digital Palette & Responsive CSS ---
+# --- 4. Exact Color Palette ---
 if st.session_state.theme == 'light':
-    bg_canvas = "#FEFFFF"      # Twilight Blue / pure white
-    text_primary = "#0B101A"   # Dark Grey
-    text_muted = "#4B5563"
-    border_hairline = "#E5E7EB"
-    accent = "#0129BA"         # International Klein Blue
+    bg_color = "#F4F4F5"       # Light Grey
+    text_color = "#18181B"     # Deep Dark for text
+    text_muted = "#71717A"
     card_bg = "#FFFFFF"
-    snow_color = "rgba(1, 41, 186, 0.08)"  # subtle blue snow for light mode
+    border_color = "#E4E4E7"
+    snow_color = "rgba(0, 0, 0, 0.05)" # Light grey snow
 else:
-    bg_canvas = "#0B101A"      # Dark Grey
-    text_primary = "#FEFFFF"   # Twilight Blue
-    text_muted = "#9CA3AF"
-    border_hairline = "#161B2E" # Mirage
-    accent = "#3B82F6"         # Brighter blue for dark mode contrast
-    card_bg = "#161B2E"        # Mirage card
-    snow_color = "rgba(255, 255, 255, 0.2)" # white snow for dark mode
+    bg_color = "#0F0F11"       # Obsidian (Deep Black)
+    text_color = "#F4F4F5"     # Light text
+    text_muted = "#A1A1AA"
+    card_bg = "#18181B"        # Slightly lighter obsidian for cards
+    border_color = "#27272A"
+    snow_color = "rgba(255, 255, 255, 0.2)" # White snow
+
+# Fixed Action Colors
+btn_terracotta = "#E2725B"     # Premium Terracotta
+btn_terracotta_hover = "#C95C47"
+btn_whatsapp = "#25D366"
 
 st.markdown(f"""
 <style>
     /* Fonts & Icons */
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Poppins:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
     @import url("https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css");
     @import url("https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css");
 
@@ -57,18 +60,15 @@ st.markdown(f"""
     html, body, [class*="st-"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, label, button, span, div {{
         font-family: 'Poppins', sans-serif !important;
     }}
-    h1, h2, h3, h4, h5 {{
-        font-family: 'Montserrat', sans-serif !important;
-        font-weight: 700 !important;
-    }}
     
     /* Base colors */
     .stApp {{
-        background-color: {bg_canvas};
-        color: {text_primary};
+        background-color: {bg_color};
+        color: {text_color};
+        transition: background-color 0.3s ease;
     }}
     h1, h2, h3, h4, h5, p, .stMarkdown {{
-        color: {text_primary} !important;
+        color: {text_color} !important;
     }}
     
     /* Hide Streamlit chrome */
@@ -77,67 +77,61 @@ st.markdown(f"""
     /* Main container */
     [data-testid="block-container"] {{
         padding-top: 2rem !important;
-        max-width: 720px !important;
+        max-width: 700px !important;
         z-index: 10;
     }}
 
-    /* ----- FILE UPLOADER (FIXED OVERLAP) ----- */
+    /* ----- FIXED FILE UPLOADER ----- */
     [data-testid="stFileUploader"] {{
         width: 100% !important;
         background-color: {card_bg} !important;
-        border: 1px solid {border_hairline} !important;
+        border: 1px solid {border_color} !important;
         border-radius: 16px !important;
-        padding: 12px !important;
-        box-sizing: border-box !important;
+        padding: 10px !important;
     }}
     [data-testid="stFileUploader"] > div > div {{
         background-color: transparent !important;
         border: none !important;
-        padding: 0 !important;
     }}
-    /* Upload button inside */
+    /* Upload Button */
     [data-testid="stFileUploader"] button {{
-        background-color: {accent} !important;
-        color: #ffffff !important;
+        background-color: {text_color} !important;
+        color: {bg_color} !important;
         border-radius: 8px !important;
         border: none !important;
-        font-size: 14px !important;
+        font-weight: 600 !important;
         padding: 8px 16px !important;
-        width: auto !important;
-        margin: 0 !important;
     }}
-    /* File name text */
+    /* Upload Text */
     [data-testid="stFileUploader"] label {{
         color: {text_muted} !important;
-        font-size: 13px !important;
     }}
 
     /* ----- TEXT AREA ----- */
     .stTextArea textarea {{
         background-color: {card_bg} !important;
-        border: 1px solid {border_hairline} !important;
+        border: 1px solid {border_color} !important;
         border-radius: 16px !important;
-        color: {text_primary} !important;
-        padding: 12px !important;
-        font-size: 16px !important;  /* Prevents iOS zoom */
+        color: {text_color} !important;
+        padding: 16px !important;
+        font-size: 16px !important;
     }}
     .stTextArea textarea::placeholder {{
         color: {text_muted} !important;
-        opacity: 0.7 !important;
     }}
 
     /* ----- MIC CONTAINER ----- */
     [data-testid="stVerticalBlockBorderWrapper"] {{
         background-color: {card_bg} !important;
-        border: 1px solid {border_hairline} !important;
+        border: 1px solid {border_color} !important;
         border-radius: 16px !important;
         padding: 15px !important;
     }}
 
-    /* ----- GENERATE BUTTON (Pill, Centered) ----- */
+    /* ----- TERRACOTTA GENERATE BUTTON ----- */
     [data-testid="baseButton-primary"] {{
-        background-color: {accent} !important;
-        color: #ffffff !important;
+        background-color: {btn_terracotta} !important;
+        color: #FFFFFF !important;
         border-radius: 30px !important;
         border: none !important;
         font-weight: 600 !important;
@@ -146,26 +140,44 @@ st.markdown(f"""
         width: auto !important;
         margin: 0 auto !important;
         display: block !important;
-        box-shadow: 0 4px 14px rgba(1, 41, 186, 0.25);
-        transition: transform 0.2s ease;
+        box-shadow: 0 4px 14px rgba(226, 114, 91, 0.3);
+        transition: transform 0.2s ease, background-color 0.2s ease;
+    }}
+    [data-testid="baseButton-primary"]:hover {{
+        background-color: {btn_terracotta_hover} !important;
     }}
     [data-testid="baseButton-primary"]:active {{
         transform: scale(0.98);
     }}
 
-    /* ----- WHATSAPP BUTTON ----- */
+    /* ----- OFFICIAL WHATSAPP BUTTON ----- */
     .whatsapp-btn {{
-        background-color: #25D366; color: white; border: none; 
-        border-radius: 30px; font-weight: 600; font-size: 16px; 
-        padding: 12px 30px; cursor: pointer; display: flex; 
-        align-items: center; justify-content: center; gap: 8px;
-        margin: 0 auto; width: fit-content; text-decoration: none;
+        background-color: {btn_whatsapp}; 
+        color: white; 
+        border: none; 
+        border-radius: 30px; 
+        font-weight: 600; 
+        font-size: 16px; 
+        padding: 12px 30px; 
+        cursor: pointer; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 10px;
+        margin: 0 auto; 
+        width: fit-content; 
+        text-decoration: none;
         box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
         transition: transform 0.2s ease;
     }}
     .whatsapp-btn:active {{ transform: scale(0.98); }}
+    
+    /* Official WhatsApp SVG alignment */
+    .whatsapp-btn svg {{
+        margin-bottom: 2px;
+    }}
 
-    /* ----- SNOW ANIMATION (Subtle, works in both themes) ----- */
+    /* ----- SNOW ANIMATION ----- */
     .snow-bg {{
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         pointer-events: none; z-index: 0;
@@ -175,90 +187,60 @@ st.markdown(f"""
         radial-gradient(2px 2px at 280px 150px, {snow_color}, transparent),
         radial-gradient(4px 4px at 400px 50px, {snow_color}, transparent);
         background-size: 400px 400px;
-        animation: snow-anim 25s linear infinite;
+        animation: snow-anim 20s linear infinite;
     }}
     @keyframes snow-anim {{ 
         0% {{ transform: translateY(-20px); }} 
         100% {{ transform: translateY(100vh); }} 
     }}
 
-    /* ----- ICON COLOR ----- */
+    /* ----- ICON COLORS ----- */
     .ph, .ph-fill {{ 
-        color: {accent} !important; 
+        color: {text_color} !important; 
         margin-right: 6px; 
         vertical-align: middle; 
         font-size: 1.2em;
     }}
 
     /* ============================================
-       RESPONSIVE DESIGN (MOBILE FIRST)
+       RESPONSIVE DESIGN (MOBILE OPTIMIZATION)
        ============================================ */
     @media (max-width: 768px) {{
         [data-testid="block-container"] {{
             padding-left: 1rem !important;
             padding-right: 1rem !important;
-            padding-top: 1rem !important;
         }}
-
-        /* Stack columns for mobile */
         [data-testid="stHorizontalBlock"] {{
             flex-direction: column !important;
             gap: 10px !important;
         }}
-
-        /* Full-width buttons on mobile */
-        [data-testid="baseButton-primary"] {{
-            width: 100% !important;
-            padding: 14px 20px !important;
-            font-size: 16px !important;
-        }}
-        .whatsapp-btn {{
+        [data-testid="baseButton-primary"], .whatsapp-btn {{
             width: 100% !important;
             padding: 14px 20px !important;
         }}
-
-        /* Touch-friendly toggle */
-        [data-testid="stToggle"] {{
-            width: 100% !important;
-            margin-bottom: 10px;
-        }}
-
-        /* Ensure file uploader doesn't overflow */
-        [data-testid="stFileUploader"] {{
-            max-width: 100% !important;
-        }}
-
-        /* Font size adjustments */
         h2 {{ font-size: 1.5rem !important; }}
         h5 {{ font-size: 1.1rem !important; }}
-    }}
-
-    @media (min-width: 769px) and (max-width: 1024px) {{
-        /* Tablet adjustments */
-        [data-testid="block-container"] {{
-            max-width: 600px !important;
-        }}
     }}
 </style>
 <div class="snow-bg"></div>
 """, unsafe_allow_html=True)
 
-# --- 5. Header & Theme Toggle (Responsive) ---
+# --- 5. Header & Toggle ---
 col1, col2 = st.columns([7, 3])
 with col2:
-    is_dark = st.toggle("🌙 Dark Mode", value=st.session_state.theme == 'dark')
+    is_dark = st.toggle("Dark Mode", value=st.session_state.theme == 'dark')
     if is_dark != (st.session_state.theme == 'dark'):
         st.session_state.theme = 'dark' if is_dark else 'light'
         st.rerun()
 
-st.markdown(f"<h2 style='text-align: center; font-weight: 800;'><i class='ph ph-house-line'></i> BrokerVoice PRO</h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='text-align: center; font-weight: 700;'><i class='ph ph-house-line'></i> BrokerVoice PRO</h2>", unsafe_allow_html=True)
 st.markdown(f"<p style='text-align: center; font-size: 14px; color: {text_muted} !important;'><i class='ph ph-magic-wand'></i> Apni awaaz ya photo ko professional listing mein badlein.</p>", unsafe_allow_html=True)
 st.write("")
 
-# --- 6. Input Section ---
+# --- 6. Inputs ---
 st.markdown(f"<h5 style='font-weight: 600;'><i class='ph ph-microphone-stage'></i> Record Live Audio</h5>", unsafe_allow_html=True)
 with st.container(border=True):
-    audio_bytes = audio_recorder(text="Tap to Record", recording_color="#EF4444", neutral_color=accent, icon_size="2x")
+    audio_bytes = audio_recorder(text="Tap to Record", recording_color="#EF4444", neutral_color=text_color, icon_size="2x")
 
 if audio_bytes:
     st.markdown(f"<div style='color: #10B981; margin-bottom: 15px; font-weight: 500;'><i class='ph-fill ph-check-circle' style='color: #10B981 !important;'></i> Awaaz record ho gayi!</div>", unsafe_allow_html=True)
@@ -317,7 +299,7 @@ if 'draft' in st.session_state:
     st.markdown(f"<h4 style='font-weight: 600; text-align:center;'><i class='ph ph-clipboard-text'></i> Aapki Listing</h4>", unsafe_allow_html=True)
     
     st.markdown(f"""
-    <div style='background: {card_bg}; border: 1px solid {border_hairline}; padding: 20px; border-radius: 16px; margin-bottom: 25px; white-space: pre-wrap; font-family: monospace; color: {text_primary};'>
+    <div style='background: {card_bg}; border: 1px solid {border_color}; padding: 20px; border-radius: 16px; margin-bottom: 25px; white-space: pre-wrap; font-family: monospace; color: {text_color};'>
     {st.session_state['draft']}
     </div>
     """, unsafe_allow_html=True)
@@ -326,4 +308,9 @@ if 'draft' in st.session_state:
     encoded_text = urllib.parse.quote(st.session_state['draft'])
     wa_url = f"https://wa.me/{YOUR_PHONE_NUMBER}?text={encoded_text}"
     
-    st.markdown(f'<div style="display: flex; justify-content: center;"><a href="{wa_url}" target="_blank" style="text-decoration:none;"><button class="whatsapp-btn"><i class="ph-fill ph-whatsapp-logo" style="font-size: 22px; color: white !important; margin-right: 0;"></i> Send on WhatsApp</button></a></div>', unsafe_allow_html=True)
+    # Official WhatsApp SVG Logo Embedded
+    whatsapp_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M12.031 2C6.502 2 2 6.502 2 12.031c0 1.77.458 3.434 1.258 4.89L2 22l5.22-1.22a9.964 9.964 0 004.81 1.22c5.53 0 10.032-4.502 10.032-10.031C22.062 6.502 17.56 2 12.031 2zm0 18.353c-1.555 0-3.03-.413-4.33-1.166l-.31-.177-3.22.75.76-3.13-.188-.31A8.31 8.31 0 013.674 12.03c0-4.61 3.75-8.36 8.36-8.36 4.61 0 8.36 3.75 8.36 8.36 0 4.61-3.75 8.36-8.36 8.36zm4.66-6.24c-.255-.128-1.512-.745-1.745-.83-.232-.086-.402-.128-.572.128-.17.255-.66 1.105-.81 1.275-.15.17-.3.19-.555.064-.255-.128-1.08-.398-2.055-1.268-.76-.678-1.27-1.516-1.42-1.772-.15-.255-.015-.393.112-.52.115-.115.255-.3.382-.45.127-.15.17-.255.255-.425.085-.17.043-.318-.02-.446-.064-.127-.573-1.38-.783-1.887-.206-.493-.418-.427-.574-.434a10.3 10.3 0 00-.49-.01c-.17 0-.446.064-.68.32-.232.255-.888.868-.888 2.115 0 1.248.908 2.454 1.034 2.624.127.17 1.788 2.73 4.333 3.83 1.33.575 1.85.465 2.185.34.336-.127 1.083-.442 1.235-.868.15-.425.15-.79.106-.868-.043-.078-.16-.127-.415-.255z"/>
+    </svg>"""
+    
+    st.markdown(f'<div style="display: flex; justify-content: center;"><a href="{wa_url}" target="_blank" style="text-decoration:none;"><button class="whatsapp-btn">{whatsapp_svg} Send on WhatsApp</button></a></div>', unsafe_allow_html=True)
