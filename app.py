@@ -2,11 +2,10 @@ import streamlit as st
 import google.generativeai as genai
 import PIL.Image
 import urllib.parse
-import gspread
-from google.oauth2.service_account import Credentials
 import pandas as pd
+from supabase import create_client, Client
 
-# --- 1. Secure API Setup ---
+# --- 1. Gemini API Setup ---
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
@@ -15,33 +14,31 @@ except KeyError:
     st.error("Gemini API Key missing from Streamlit secrets.")
     st.stop()
 
-# --- 2. Google Sheets Setup ---
-SHEET_NAME = "BrokerVoiceData"
+# --- 2. Supabase Setup ---
+@st.cache_resource
+def init_supabase() -> Client:
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
 
-def get_gspread_client():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds_dict = dict(st.secrets["gcp_service_account"])
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-    return gspread.authorize(creds)
+supabase = init_supabase()
 
-def log_to_sheet(farmer_name, property_details, listing_text):
+def save_to_db(farmer_name, property_details, listing_text):
     try:
-        client = get_gspread_client()
-        sheet = client.open(SHEET_NAME).sheet1
-        # Date aur time bhi save karte hain
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-        sheet.append_row([timestamp, farmer_name, property_details, listing_text])
+        data = {
+            "farmer_name": farmer_name,
+            "property_details": property_details,
+            "listing_text": listing_text
+        }
+        supabase.table("listings").insert(data).execute()
     except Exception as e:
-        print("Sheet logging error:", e)
+        st.error(f"Database save error: {e}")
 
 def get_history():
     try:
-        client = get_gspread_client()
-        sheet = client.open(SHEET_NAME).sheet1
-        records = sheet.get_all_records()
-        return pd.DataFrame(records)
-    except Exception as e:
+        response = supabase.table("listings").select("*").order("created_at", desc=True).execute()
+        return pd.DataFrame(response.data)
+    except Exception:
         return pd.DataFrame()
 
 # --- 3. Page Config ---
@@ -131,7 +128,6 @@ text_input = st.text_area("Details", height=80, placeholder="Example: Highway se
 st.markdown("<br>", unsafe_allow_html=True)
 btn_col1, btn_col2, btn_col3 = st.columns([1, 2, 1])
 with btn_col2:
-    # BUG FIXED: Removed use_keyword
     generate_clicked = st.button("✨ Generate Listing", type="primary", use_container_width=True)
 
 if generate_clicked:
@@ -151,7 +147,7 @@ if generate_clicked:
                 st.session_state['draft'] = response.text
                 
                 if farmer_name:
-                    log_to_sheet(farmer_name, text_input or "Voice/Image input", response.text)
+                    save_to_db(farmer_name, text_input or "Voice/Image input", response.text)
                     
             except Exception as e:
                 st.markdown(f"<div style='color: #EF4444;'><i class='ph-fill ph-x-circle'></i> Error: {e}</div>", unsafe_allow_html=True)
@@ -163,8 +159,7 @@ if 'draft' in st.session_state:
     
     st.markdown(f"<div style='background: {card_bg}; border: 1px solid {border_color}; padding: 20px; border-radius: 16px; margin-bottom: 25px; white-space: pre-wrap; font-family: monospace; color: {text_color};'>{st.session_state['draft']}</div>", unsafe_allow_html=True)
     
-    # WhatsApp URL
-    YOUR_PHONE_NUMBER = "918643002478" # Apna ya client ka number yahan daalo
+    YOUR_PHONE_NUMBER = "918643002478"
     encoded_text = urllib.parse.quote(st.session_state['draft'])
     wa_url = f"https://wa.me/{YOUR_PHONE_NUMBER}?text={encoded_text}"
     
@@ -180,11 +175,13 @@ if 'draft' in st.session_state:
             del st.session_state['draft']
             st.rerun()
 
-# --- 9. History Section (Client's Request) ---
+# --- 9. History Section ---
 st.divider()
 with st.expander("📂 Purani Listings Dekhein (History)"):
     df = get_history()
     if not df.empty:
+        df = df[["created_at", "farmer_name", "property_details", "listing_text"]]
+        df.columns = ["Date", "Farmer Name", "Details", "Listing"]
         st.dataframe(df, use_container_width=True)
     else:
         st.info("Abhi tak koi listing save nahi hui hai.")
