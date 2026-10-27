@@ -9,7 +9,7 @@ from supabase import create_client, Client
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-3.6-flash')
 except KeyError:
     st.error("Gemini API Key missing from Streamlit secrets.")
     st.stop()
