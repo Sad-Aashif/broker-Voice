@@ -9,7 +9,7 @@ from supabase import create_client, Client
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel('gemini-3.6-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except KeyError:
     st.error("Gemini API Key missing from Streamlit secrets.")
     st.stop()
@@ -59,34 +59,160 @@ btn_green, btn_whatsapp = "#22C55E", "#25D366"
 
 st.markdown(f"""
 <style>
+    /* Fonts & Icons */
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
     @import url("https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css");
     
-    html, body, [class*="st-"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, label, button, span, div {{ font-family: 'Poppins', sans-serif !important; }}
-    .stApp {{ background-color: {bg_color}; color: {text_color}; transition: background-color 0.3s ease; }}
-    h1, h2, h3, h4, h5, p, .stMarkdown {{ color: {text_color} !important; }}
+    /* Global Typography (Targeted to not break layout) */
+    p, h1, h2, h3, h4, h5, h6, label, span, div, button, input, textarea {{ 
+        font-family: 'Poppins', sans-serif !important; 
+    }}
+    
+    .stApp {{ 
+        background-color: {bg_color}; 
+        color: {text_color}; 
+        transition: background-color 0.3s ease; 
+    }}
+    h1, h2, h3, h4, h5, p {{ 
+        color: {text_color} !important; 
+    }}
+    
     #MainMenu, header, footer {{visibility: hidden;}}
     
-    [data-testid="block-container"] {{ padding-top: 2rem !important; padding-bottom: 120px !important; max-width: 700px !important; z-index: 10; }}
+    /* Main Container Adjustments */
+    [data-testid="block-container"] {{ 
+        padding-top: 1rem !important; 
+        padding-bottom: 120px !important; 
+        max-width: 700px !important; 
+        z-index: 10; 
+    }}
 
-    [data-testid="stFileUploader"] {{ width: 100% !important; background-color: {card_bg} !important; border: 1px solid {border_color} !important; border-radius: 16px !important; padding: 10px !important; }}
-    [data-testid="stFileUploader"] > div > div {{ background-color: transparent !important; border: none !important; }}
-    [data-testid="stFileUploader"] button {{ background-color: {text_color} !important; color: {bg_color} !important; border-radius: 8px !important; font-weight: 600 !important; padding: 8px 16px !important; min-width: 120px !important; }}
+    /* File Uploader */
+    [data-testid="stFileUploader"] {{ 
+        width: 100% !important; 
+        background-color: {card_bg} !important; 
+        border: 1px solid {border_color} !important; 
+        border-radius: 16px !important; 
+        padding: 10px !important; 
+    }}
+    [data-testid="stFileUploader"] > div > div {{ 
+        background-color: transparent !important; 
+        border: none !important; 
+    }}
+    [data-testid="stFileUploader"] button {{ 
+        background-color: {text_color} !important; 
+        color: {bg_color} !important; 
+        border-radius: 8px !important; 
+        font-weight: 600 !important; 
+        padding: 8px 16px !important; 
+        min-width: 120px !important; 
+    }}
     
-    [data-testid="stAudioInput"] {{ background-color: {card_bg} !important; border: 1px solid {border_color} !important; border-radius: 16px !important; padding: 10px !important; }}
-    [data-testid="stAudioInput"] button {{ background-color: {text_color} !important; color: {bg_color} !important; border-radius: 50% !important; width: 60px !important; height: 60px !important; display: flex !important; margin: 0 auto !important; }}
+    /* Audio Input */
+    [data-testid="stAudioInput"] {{ 
+        background-color: {card_bg} !important; 
+        border: 1px solid {border_color} !important; 
+        border-radius: 16px !important; 
+        padding: 10px !important; 
+    }}
+    [data-testid="stAudioInput"] button {{ 
+        background-color: {text_color} !important; 
+        color: {bg_color} !important; 
+        border-radius: 50% !important; 
+        width: 60px !important; 
+        height: 60px !important; 
+        display: flex !important; 
+        margin: 0 auto !important; 
+    }}
 
-    .stTextArea textarea, .stTextInput input {{ background-color: {card_bg} !important; border: 1px solid {border_color} !important; border-radius: 16px !important; color: {text_color} !important; padding: 16px !important; font-size: 16px !important; }}
+    /* Text Inputs */
+    .stTextArea textarea, .stTextInput input {{ 
+        background-color: {card_bg} !important; 
+        border: 1px solid {border_color} !important; 
+        border-radius: 16px !important; 
+        color: {text_color} !important; 
+        padding: 16px !important; 
+        font-size: 16px !important; 
+    }}
 
-    [data-testid="baseButton-primary"] {{ background-color: {btn_green} !important; color: #FFFFFF !important; border-radius: 30px !important; border: none !important; font-weight: 600 !important; font-size: 16px !important; padding: 12px 40px !important; display: block !important; box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3); }}
-    div.stButton > button[kind="secondary"] {{ background-color: transparent !important; color: {text_color} !important; border: 1px solid {border_color} !important; border-radius: 30px !important; font-weight: 600 !important; padding: 10px 30px !important; display: block !important; }}
+    /* Green Generate Button (Fixed Selector) */
+    div.stButton > button[kind="primary"] {{ 
+        background-color: {btn_green} !important; 
+        color: #FFFFFF !important; 
+        border-radius: 30px !important; 
+        border: none !important; 
+        font-weight: 600 !important; 
+        font-size: 16px !important; 
+        padding: 12px 40px !important; 
+        display: block !important; 
+        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3); 
+    }}
+    
+    /* Secondary Reset Button */
+    div.stButton > button[kind="secondary"] {{ 
+        background-color: transparent !important; 
+        color: {text_color} !important; 
+        border: 1px solid {border_color} !important; 
+        border-radius: 30px !important; 
+        font-weight: 600 !important; 
+        padding: 10px 30px !important; 
+        display: block !important; 
+    }}
 
-    .whatsapp-btn {{ background-color: {btn_whatsapp}; color: white; border: none; border-radius: 30px; font-weight: 600; font-size: 16px; padding: 12px 30px; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 auto; text-decoration: none; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3); }}
+    /* WhatsApp Button */
+    .whatsapp-btn {{ 
+        background-color: {btn_whatsapp}; 
+        color: white; 
+        border: none; 
+        border-radius: 30px; 
+        font-weight: 600; 
+        font-size: 16px; 
+        padding: 12px 30px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 10px; 
+        margin: 0 auto; 
+        text-decoration: none; 
+        box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3); 
+    }}
 
-    .snow-bg {{ position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; background-image: radial-gradient(2px 2px at 20px 30px, {snow_color}, transparent), radial-gradient(3px 3px at 150px 90px, {snow_color}, transparent); background-size: 400px 400px; animation: snow-anim 20s linear infinite; }}
-    @keyframes snow-anim {{ 0% {{ transform: translateY(-20px); }} 100% {{ transform: translateY(100vh); }} }}
+    /* History Expander Fix */
+    [data-testid="stExpander"] {{ 
+        border: 1px solid {border_color} !important; 
+        border-radius: 16px !important; 
+        background-color: {card_bg} !important;
+    }}
+    [data-testid="stExpander"] summary {{ 
+        font-weight: 600 !important; 
+        color: {text_color} !important; 
+    }}
+    [data-testid="stExpander"] summary span {{
+        white-space: normal !important; /* Fixes text overlap */
+    }}
 
-    .snow-footer {{ position: fixed; bottom: 0; left: 0; right: 0; height: 90px; background: {footer_bg}; border-radius: 50% 50% 0 0 / 100% 100% 0 0; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 30px 15px 30px; z-index: 99; box-shadow: 0 -10px 20px rgba(0,0,0,0.05); }}
+    /* Snow Animation */
+    .snow-bg {{ 
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+        pointer-events: none; z-index: 0; 
+        background-image: radial-gradient(2px 2px at 20px 30px, {snow_color}, transparent), radial-gradient(3px 3px at 150px 90px, {snow_color}, transparent); 
+        background-size: 400px 400px; 
+        animation: snow-anim 20s linear infinite; 
+    }}
+    @keyframes snow-anim {{ 
+        0% {{ transform: translateY(-20px); }} 
+        100% {{ transform: translateY(100vh); }} 
+    }}
+
+    /* Footer */
+    .snow-footer {{ 
+        position: fixed; bottom: 0; left: 0; right: 0; height: 90px; 
+        background: {footer_bg}; 
+        border-radius: 50% 50% 0 0 / 100% 100% 0 0; 
+        display: flex; justify-content: space-between; align-items: flex-end; 
+        padding: 0 30px 15px 30px; z-index: 99; 
+        box-shadow: 0 -10px 20px rgba(0,0,0,0.05); 
+    }}
     .snow-footer span {{ font-size: 32px; }}
     .house-center {{ font-size: 45px !important; margin-bottom: -5px; }}
     .ph, .ph-fill {{ color: {text_color} !important; margin-right: 6px; vertical-align: middle; font-size: 1.2em; }}
@@ -103,8 +229,14 @@ with col2:
         st.session_state.theme = 'dark' if is_dark else 'light'
         st.rerun()
 
-st.markdown(f"<h2 style='text-align: center; font-weight: 700;'><i class='ph-fill ph-house-line'></i> BrokerVoice PRO</h2>", unsafe_allow_html=True)
-st.write("")
+# Header Logo
+st.markdown(f"""
+<div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+    <h2 style="font-weight: 700; color: {text_color}; margin: 0;">
+        <i class="ph-fill ph-house-line" style="color: {text_color};"></i> BrokerVoice PRO
+    </h2>
+</div>
+""", unsafe_allow_html=True)
 
 # --- 6. Inputs ---
 st.markdown(f"<h5 style='font-weight: 600;'><i class='ph-fill ph-user-circle'></i> Farmer / Owner ka Naam</h5>", unsafe_allow_html=True)
@@ -177,7 +309,8 @@ if 'draft' in st.session_state:
 
 # --- 9. History Section ---
 st.divider()
-with st.expander("📂 Purani Listings Dekhein (History)"):
+# Emoji removed, plain text used to fix overlap
+with st.expander("Purani Listings Dekhein (History)"):
     df = get_history()
     if not df.empty:
         df = df[["created_at", "farmer_name", "property_details", "listing_text"]]
