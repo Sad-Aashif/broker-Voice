@@ -2,32 +2,17 @@ import streamlit as st
 import google.generativeai as genai
 import PIL.Image
 import urllib.parse
-import gspread
-from google.oauth2.service_account import Credentials
 
 # --- 1. Secure API Setup ---
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel('gemini-3.5-flash-lite')
+    model = genai.GenerativeModel('gemini-3.5-flash-lite') # ERROR FIXED YAHAN
 except KeyError:
     st.error("API Key missing. Please set GEMINI_API_KEY in Streamlit secrets.")
     st.stop()
 
-# --- 2. Google Sheets Setup (Optional Tracking) ---
-def log_to_sheet(farmer_name, property_details, listing_text):
-    try:
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-        client = gspread.authorize(creds)
-        # Sheet ka naam 'BrokerVoiceData' hona chahiye
-        sheet = client.open("BrokerVoiceData").sheet1
-        sheet.append_row([farmer_name, property_details, listing_text])
-    except Exception as e:
-        print("Sheet logging error (non-fatal):", e)
-
-# --- 3. Page Config ---
+# --- 2. Page Config (Responsive) ---
 st.set_page_config(
     page_title="BrokerVoice PRO",
     layout="centered",
@@ -35,42 +20,44 @@ st.set_page_config(
     menu_items={}
 )
 
-# --- 4. Theme State ---
+# --- 3. Theme State ---
 if 'theme' not in st.session_state:
     st.session_state.theme = 'light'
 
-# --- 5. Color Palette ---
+# --- 4. Exact Color Palette ---
 if st.session_state.theme == 'light':
-    bg_color = "#F4F4F5"
-    text_color = "#18181B"
+    bg_color = "#F4F4F5"       # Light Grey
+    text_color = "#18181B"     # Deep Dark
     text_muted = "#71717A"
     card_bg = "#FFFFFF"
     border_color = "#E4E4E7"
     snow_color = "rgba(0, 0, 0, 0.05)"
     footer_bg = "#FFFFFF"
 else:
-    bg_color = "#0F0F11"
-    text_color = "#F4F4F5"
+    bg_color = "#0F0F11"       # Obsidian
+    text_color = "#F4F4F5"     # Light text
     text_muted = "#A1A1AA"
-    card_bg = "#18181B"
+    card_bg = "#18181B"        # Slightly lighter obsidian
     border_color = "#27272A"
     snow_color = "rgba(255, 255, 255, 0.2)"
     footer_bg = "#18181B"
 
-btn_green = "#22C55E"
-btn_whatsapp = "#25D366"
-btn_reset = "#EF4444"
+btn_green = "#22C55E"          # Generate Button (Green)
+btn_whatsapp = "#25D366"       # WhatsApp Button
 
 st.markdown(f"""
 <style>
+    /* Fonts & Icons */
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
     @import url("https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css");
     @import url("https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css");
 
+    /* Global Typography */
     html, body, [class*="st-"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, label, button, span, div {{
         font-family: 'Poppins', sans-serif !important;
     }}
     
+    /* Base colors */
     .stApp {{
         background-color: {bg_color};
         color: {text_color};
@@ -80,15 +67,18 @@ st.markdown(f"""
         color: {text_color} !important;
     }}
     
+    /* Hide Streamlit chrome */
     #MainMenu, header, footer {{visibility: hidden;}}
 
+    /* Main container */
     [data-testid="block-container"] {{
         padding-top: 2rem !important;
-        padding-bottom: 120px !important;
+        padding-bottom: 120px !important; /* Space for footer */
         max-width: 700px !important;
         z-index: 10;
     }}
 
+    /* ----- FIXED FILE UPLOADER (NO OVERLAP) ----- */
     [data-testid="stFileUploader"] {{
         width: 100% !important;
         background-color: {card_bg} !important;
@@ -100,6 +90,7 @@ st.markdown(f"""
         background-color: transparent !important;
         border: none !important;
     }}
+    /* Upload Button */
     [data-testid="stFileUploader"] button {{
         background-color: {text_color} !important;
         color: {bg_color} !important;
@@ -107,20 +98,22 @@ st.markdown(f"""
         border: none !important;
         font-weight: 600 !important;
         padding: 8px 16px !important;
-        white-space: nowrap !important;
+        white-space: nowrap !important; /* Fix text break */
         min-width: 120px !important;
     }}
     
+    /* ----- NATIVE AUDIO INPUT (MIC BUTTON) ----- */
     [data-testid="stAudioInput"] {{
         background-color: {card_bg} !important;
         border: 1px solid {border_color} !important;
         border-radius: 16px !important;
         padding: 10px !important;
     }}
+    /* Style the record button inside */
     [data-testid="stAudioInput"] button {{
         background-color: {text_color} !important;
         color: {bg_color} !important;
-        border-radius: 50% !important;
+        border-radius: 50% !important; /* Circle */
         width: 60px !important;
         height: 60px !important;
         display: flex !important;
@@ -128,7 +121,13 @@ st.markdown(f"""
         justify-content: center !important;
         margin: 0 auto !important;
     }}
+    [data-testid="stAudioInput"] button svg {{
+        fill: {bg_color} !important;
+        width: 30px !important;
+        height: 30px !important;
+    }}
 
+    /* ----- TEXT AREA ----- */
     .stTextArea textarea {{
         background-color: {card_bg} !important;
         border: 1px solid {border_color} !important;
@@ -141,7 +140,7 @@ st.markdown(f"""
         color: {text_muted} !important;
     }}
 
-    /* Generate Button */
+    /* ----- GREEN GENERATE BUTTON ----- */
     [data-testid="baseButton-primary"] {{
         background-color: {btn_green} !important;
         color: #FFFFFF !important;
@@ -154,27 +153,13 @@ st.markdown(f"""
         margin: 0 auto !important;
         display: block !important;
         box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+        transition: transform 0.2s ease;
+    }}
+    [data-testid="baseButton-primary"]:active {{
+        transform: scale(0.98);
     }}
 
-    /* Reset Button Modern Styling */
-    div.stButton > button[kind="secondary"] {{
-        background-color: transparent !important;
-        color: {text_color} !important;
-        border: 1px solid {border_color} !important;
-        border-radius: 30px !important;
-        font-weight: 600 !important;
-        padding: 10px 30px !important;
-        width: fit-content !important;
-        margin: 0 auto !important;
-        display: block !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        transition: all 0.2s ease;
-    }}
-    div.stButton > button[kind="secondary"]:hover {{
-        border-color: {text_muted} !important;
-        background-color: rgba(0,0,0,0.02) !important;
-    }}
-
+    /* ----- WHATSAPP BUTTON ----- */
     .whatsapp-btn {{
         background-color: {btn_whatsapp}; 
         color: white; 
@@ -192,14 +177,19 @@ st.markdown(f"""
         width: fit-content; 
         text-decoration: none;
         box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+        transition: transform 0.2s ease;
     }}
+    .whatsapp-btn:active {{ transform: scale(0.98); }}
 
+    /* ----- SNOW ANIMATION ----- */
     .snow-bg {{
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         pointer-events: none; z-index: 0;
         background-image: 
         radial-gradient(2px 2px at 20px 30px, {snow_color}, transparent),
-        radial-gradient(3px 3px at 150px 90px, {snow_color}, transparent);
+        radial-gradient(3px 3px at 150px 90px, {snow_color}, transparent),
+        radial-gradient(2px 2px at 280px 150px, {snow_color}, transparent),
+        radial-gradient(4px 4px at 400px 50px, {snow_color}, transparent);
         background-size: 400px 400px;
         animation: snow-anim 20s linear infinite;
     }}
@@ -208,25 +198,57 @@ st.markdown(f"""
         100% {{ transform: translateY(100vh); }} 
     }}
 
+    /* ----- FOOTER (SNOW GROUND + SNOWMEN) ----- */
     .snow-footer {{
-        position: fixed; bottom: 0; left: 0; right: 0; height: 90px;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: 90px;
         background: {footer_bg};
         border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-        display: flex; justify-content: space-between; align-items: flex-end;
-        padding: 0 30px 15px 30px; z-index: 99;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding: 0 30px 15px 30px;
+        z-index: 99;
         box-shadow: 0 -10px 20px rgba(0,0,0,0.05);
     }}
     .snow-footer span {{ font-size: 32px; }}
     .house-center {{ font-size: 45px !important; margin-bottom: -5px; }}
 
+    /* ----- ICON COLORS ----- */
     .ph, .ph-fill {{ 
         color: {text_color} !important; 
         margin-right: 6px; 
         vertical-align: middle; 
         font-size: 1.2em;
     }}
+
+    /* ============================================
+       RESPONSIVE DESIGN (MOBILE)
+       ============================================ */
+    @media (max-width: 768px) {{
+        [data-testid="block-container"] {{
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }}
+        [data-testid="stHorizontalBlock"] {{
+            flex-direction: column !important;
+            gap: 10px !important;
+        }}
+        [data-testid="baseButton-primary"], .whatsapp-btn {{
+            width: 100% !important;
+            padding: 14px 20px !important;
+        }}
+        h2 {{ font-size: 1.5rem !important; }}
+        h5 {{ font-size: 1.1rem !important; }}
+        .snow-footer {{ padding: 0 10px 10px 10px; height: 70px; }}
+        .snow-footer span {{ font-size: 24px; }}
+        .house-center {{ font-size: 32px !important; }}
+    }}
 </style>
 <div class="snow-bg"></div>
+
+<!-- Snow Footer with Snowmen & House -->
 <div class="snow-footer">
     <span>☃️⛄</span>
     <span class="house-center">🏠</span>
@@ -234,7 +256,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- 6. Header & Toggle ---
+# --- 5. Header & Toggle ---
 col1, col2 = st.columns([7, 3])
 with col2:
     is_dark = st.toggle("Dark Mode", value=st.session_state.theme == 'dark')
@@ -246,11 +268,9 @@ st.markdown(f"<h2 style='text-align: center; font-weight: 700;'><i class='ph-fil
 st.markdown(f"<p style='text-align: center; font-size: 14px; color: {text_muted} !important;'><i class='ph-fill ph-magic-wand'></i> Apni awaaz ya photo ko professional listing mein badlein.</p>", unsafe_allow_html=True)
 st.write("")
 
-# --- 7. Inputs ---
-st.markdown(f"<h5 style='font-weight: 600;'><i class='ph-fill ph-user-circle'></i> Farmer / Owner ka Naam (Tracking ke liye)</h5>", unsafe_allow_html=True)
-farmer_name = st.text_input("Farmer Name", placeholder="Jaise: Ramesh ji (Sehore wale)", label_visibility="collapsed")
-
-st.markdown(f"<h5 style='font-weight: 600; margin-top:15px;'><i class='ph-fill ph-microphone-stage'></i> Record Live Audio</h5>", unsafe_allow_html=True)
+# --- 6. Inputs ---
+st.markdown(f"<h5 style='font-weight: 600;'><i class='ph-fill ph-microphone-stage'></i> Record Live Audio</h5>", unsafe_allow_html=True)
+# Using native st.audio_input
 audio_bytes = st.audio_input("Tap to Record", key="live_audio")
 
 if audio_bytes:
@@ -267,11 +287,11 @@ image_file = st.file_uploader("Photo", type=["jpg", "jpeg", "png"], label_visibi
 st.markdown(f"<p style='font-size:14px; margin-bottom:5px; margin-top:15px; font-weight:500;'><i class='ph-fill ph-pencil-simple'></i> Koi aur details (optional)</p>", unsafe_allow_html=True)
 text_input = st.text_area("Details", height=80, placeholder="Example: Highway se 2km door...", label_visibility="collapsed")
 
-# --- 8. Process ---
+# --- 7. Process ---
 st.markdown("<br>", unsafe_allow_html=True)
 btn_col1, btn_col2, btn_col3 = st.columns([1, 2, 1])
 with btn_col2:
-    generate_clicked = st.button("✨ Generate Listing", type="primary", use_keyword=True, use_container_width=True)
+    generate_clicked = st.button("✨ Generate Listing", type="primary", use_container_width=True)
 
 if generate_clicked:
     if not audio_bytes and not audio_file and not image_file and not text_input:
@@ -300,17 +320,11 @@ if generate_clicked:
 
             try:
                 response = model.generate_content(contents)
-                final_text = response.text
-                st.session_state['draft'] = final_text
-                
-                # Google Sheet log trigger agar farmer name diya ho
-                if farmer_name:
-                    log_to_sheet(farmer_name, text_input or "Voice/Image input", final_text)
-                    
+                st.session_state['draft'] = response.text
             except Exception as e:
                 st.markdown(f"<div style='color: #EF4444;'><i class='ph-fill ph-x-circle' style='color: #EF4444 !important;'></i> Error: {e}</div>", unsafe_allow_html=True)
 
-# --- 9. Output & Reset ---
+# --- 8. Output & Reset ---
 if 'draft' in st.session_state:
     st.divider()
     st.markdown(f"<h4 style='font-weight: 600; text-align:center;'><i class='ph-fill ph-clipboard-text'></i> Aapki Listing</h4>", unsafe_allow_html=True)
@@ -325,6 +339,7 @@ if 'draft' in st.session_state:
     encoded_text = urllib.parse.quote(st.session_state['draft'])
     wa_url = f"https://wa.me/{YOUR_PHONE_NUMBER}?text={encoded_text}"
     
+    # Official WhatsApp SVG Logo Embedded
     whatsapp_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
         <path d="M12.031 2C6.502 2 2 6.502 2 12.031c0 1.77.458 3.434 1.258 4.89L2 22l5.22-1.22a9.964 9.964 0 004.81 1.22c5.53 0 10.032-4.502 10.032-10.031C22.062 6.502 17.56 2 12.031 2zm0 18.353c-1.555 0-3.03-.413-4.33-1.166l-.31-.177-3.22.75.76-3.13-.188-.31A8.31 8.31 0 013.674 12.03c0-4.61 3.75-8.36 8.36-8.36 4.61 0 8.36 3.75 8.36 8.36 0 4.61-3.75 8.36-8.36 8.36zm4.66-6.24c-.255-.128-1.512-.745-1.745-.83-.232-.086-.402-.128-.572.128-.17.255-.66 1.105-.81 1.275-.15.17-.3.19-.555.064-.255-.128-1.08-.398-2.055-1.268-.76-.678-1.27-1.516-1.42-1.772-.15-.255-.015-.393.112-.52.115-.115.255-.3.382-.45.127-.15.17-.255.255-.425.085-.17.043-.318-.02-.446-.064-.127-.573-1.38-.783-1.887-.206-.493-.418-.427-.574-.434a10.3 10.3 0 00-.49-.01c-.17 0-.446.064-.68.32-.232.255-.888.868-.888 2.115 0 1.248.908 2.454 1.034 2.624.127.17 1.788 2.73 4.333 3.83 1.33.575 1.85.465 2.185.34.336-.127 1.083-.442 1.235-.868.15-.425.15-.79.106-.868-.043-.078-.16-.127-.415-.255z"/>
     </svg>"""
@@ -333,7 +348,9 @@ if 'draft' in st.session_state:
     
     st.write("")
     
-    # Modern Rounded Reset Button
-    if st.button("🔄 Nayi Listing Banayein (Reset)", use_container_width=False):
-        del st.session_state['draft']
-        st.rerun()
+    # PERFECT RESET LOGIC YAHAN HAI
+    col_r1, col_r2, col_r3 = st.columns([1, 2, 1])
+    with col_r2:
+        if st.button("🔄 Nayi Listing Banayein (Reset)", use_container_width=True):
+            del st.session_state['draft']
+            st.rerun()
