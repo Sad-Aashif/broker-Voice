@@ -7,7 +7,7 @@ import urllib.parse
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel('gemini-3.5-flash-lite')
+    model = genai.GenerativeModel('gemini-3.6-flash') # ERROR FIXED YAHAN
 except KeyError:
     st.error("API Key missing. Please set GEMINI_API_KEY in Streamlit secrets.")
     st.stop()
@@ -23,9 +23,6 @@ st.set_page_config(
 # --- 3. Theme State ---
 if 'theme' not in st.session_state:
     st.session_state.theme = 'light'
-
-def toggle_theme():
-    st.session_state.theme = 'dark' if st.session_state.theme == 'light' else 'light'
 
 # --- 4. Exact Color Palette ---
 if st.session_state.theme == 'light':
@@ -53,6 +50,7 @@ st.markdown(f"""
     /* Fonts & Icons */
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
     @import url("https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css");
+    @import url("https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css");
 
     /* Global Typography */
     html, body, [class*="st-"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, label, button, span, div {{
@@ -266,27 +264,27 @@ with col2:
         st.session_state.theme = 'dark' if is_dark else 'light'
         st.rerun()
 
-st.markdown(f"<h2 style='text-align: center; font-weight: 700;'><i class='ph ph-house-line'></i> BrokerVoice PRO</h2>", unsafe_allow_html=True)
-st.markdown(f"<p style='text-align: center; font-size: 14px; color: {text_muted} !important;'><i class='ph ph-magic-wand'></i> Apni awaaz ya photo ko professional listing mein badlein.</p>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='text-align: center; font-weight: 700;'><i class='ph-fill ph-house-line'></i> BrokerVoice PRO</h2>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center; font-size: 14px; color: {text_muted} !important;'><i class='ph-fill ph-magic-wand'></i> Apni awaaz ya photo ko professional listing mein badlein.</p>", unsafe_allow_html=True)
 st.write("")
 
 # --- 6. Inputs ---
-st.markdown(f"<h5 style='font-weight: 600;'><i class='ph ph-microphone-stage'></i> Record Live Audio</h5>", unsafe_allow_html=True)
+st.markdown(f"<h5 style='font-weight: 600;'><i class='ph-fill ph-microphone-stage'></i> Record Live Audio</h5>", unsafe_allow_html=True)
 # Using native st.audio_input
 audio_bytes = st.audio_input("Tap to Record", key="live_audio")
 
 if audio_bytes:
     st.markdown(f"<div style='color: #10B981; margin-bottom: 15px; font-weight: 500;'><i class='ph-fill ph-check-circle' style='color: #10B981 !important;'></i> Awaaz record ho gayi!</div>", unsafe_allow_html=True)
 
-st.markdown(f"<h5 style='font-weight: 600; margin-top:20px;'><i class='ph ph-folder-open'></i> Ya File Upload Karein</h5>", unsafe_allow_html=True)
+st.markdown(f"<h5 style='font-weight: 600; margin-top:20px;'><i class='ph-fill ph-folder-open'></i> Ya File Upload Karein</h5>", unsafe_allow_html=True)
 
-st.markdown(f"<p style='font-size:14px; margin-bottom:5px; font-weight:500;'><i class='ph ph-file-audio'></i> Voice note upload karein</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='font-size:14px; margin-bottom:5px; font-weight:500;'><i class='ph-fill ph-file-audio'></i> Voice note upload karein</p>", unsafe_allow_html=True)
 audio_file = st.file_uploader("Voice Note", type=["mp3", "m4a", "wav"], label_visibility="collapsed")
 
-st.markdown(f"<p style='font-size:14px; margin-bottom:5px; margin-top:15px; font-weight:500;'><i class='ph ph-image'></i> Property ki photo upload karein</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='font-size:14px; margin-bottom:5px; margin-top:15px; font-weight:500;'><i class='ph-fill ph-image'></i> Property ki photo upload karein</p>", unsafe_allow_html=True)
 image_file = st.file_uploader("Photo", type=["jpg", "jpeg", "png"], label_visibility="collapsed", key="img")
 
-st.markdown(f"<p style='font-size:14px; margin-bottom:5px; margin-top:15px; font-weight:500;'><i class='ph ph-pencil-simple'></i> Koi aur details (optional)</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='font-size:14px; margin-bottom:5px; margin-top:15px; font-weight:500;'><i class='ph-fill ph-pencil-simple'></i> Koi aur details (optional)</p>", unsafe_allow_html=True)
 text_input = st.text_area("Details", height=80, placeholder="Example: Highway se 2km door...", label_visibility="collapsed")
 
 # --- 7. Process ---
@@ -326,10 +324,10 @@ if generate_clicked:
             except Exception as e:
                 st.markdown(f"<div style='color: #EF4444;'><i class='ph-fill ph-x-circle' style='color: #EF4444 !important;'></i> Error: {e}</div>", unsafe_allow_html=True)
 
-# --- 8. Output ---
+# --- 8. Output & Reset ---
 if 'draft' in st.session_state:
     st.divider()
-    st.markdown(f"<h4 style='font-weight: 600; text-align:center;'><i class='ph ph-clipboard-text'></i> Aapki Listing</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='font-weight: 600; text-align:center;'><i class='ph-fill ph-clipboard-text'></i> Aapki Listing</h4>", unsafe_allow_html=True)
     
     st.markdown(f"""
     <div style='background: {card_bg}; border: 1px solid {border_color}; padding: 20px; border-radius: 16px; margin-bottom: 25px; white-space: pre-wrap; font-family: monospace; color: {text_color};'>
@@ -347,3 +345,12 @@ if 'draft' in st.session_state:
     </svg>"""
     
     st.markdown(f'<div style="display: flex; justify-content: center;"><a href="{wa_url}" target="_blank" style="text-decoration:none;"><button class="whatsapp-btn">{whatsapp_svg} Send on WhatsApp</button></a></div>', unsafe_allow_html=True)
+    
+    st.write("")
+    
+    # PERFECT RESET LOGIC YAHAN HAI
+    col_r1, col_r2, col_r3 = st.columns([1, 2, 1])
+    with col_r2:
+        if st.button("🔄 Nayi Listing Banayein (Reset)", use_container_width=True):
+            del st.session_state['draft']
+            st.rerun()
